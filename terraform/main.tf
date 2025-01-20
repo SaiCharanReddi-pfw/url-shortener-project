@@ -51,11 +51,6 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "dynamodb:GetItem"
         ],
         Resource = aws_dynamodb_table.url_shortener.arn
-      },
-      {
-        Effect = "Allow",
-        Action = "sns:Publish",
-        Resource = aws_sns_topic.alerts.arn
       }
     ]
   })
@@ -163,30 +158,6 @@ resource "aws_cloudwatch_log_group" "api_gateway_log_group" {
   retention_in_days = 14
 }
 
-# CloudWatch Log Group for Lambda
-resource "aws_cloudwatch_log_group" "lambda_log_group" {
-  name              = "/aws/lambda/url-shortener-lambda"
-  retention_in_days = 14
-}
-
-# CloudWatch Alarm for Lambda Errors
-resource "aws_cloudwatch_metric_alarm" "lambda_error_alarm" {
-  alarm_name          = "url-shortener-lambda-error-alarm"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  metric_name         = "Errors"
-  namespace           = "AWS/Lambda"
-  period              = 60
-  statistic           = "Sum"
-  threshold           = 1
-  alarm_actions       = [aws_sns_topic.alerts.arn]
-}
-
-# SNS Topic for Alerts
-resource "aws_sns_topic" "alerts" {
-  name = "url-shortener-alerts"
-}
-
 # IAM Role for API Gateway Logging
 resource "aws_iam_role" "api_gateway_cloudwatch_role" {
   name = "APIGatewayCloudWatchLogsRole"
@@ -194,7 +165,7 @@ resource "aws_iam_role" "api_gateway_cloudwatch_role" {
     Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow",
+        Effect    = "Allow",
         Principal = { Service = "apigateway.amazonaws.com" },
         Action    = "sts:AssumeRole"
       }
