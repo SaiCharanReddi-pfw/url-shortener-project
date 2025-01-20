@@ -19,11 +19,13 @@ resource "aws_iam_role" "lambda_role" {
   name = "url-shortener-lambda-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [{
-      Effect    = "Allow",
-      Principal = { Service = "lambda.amazonaws.com" },
-      Action    = "sts:AssumeRole"
-    }]
+    Statement = [
+      {
+        Effect    = "Allow",
+        Principal = { Service = "lambda.amazonaws.com" },
+        Action    = "sts:AssumeRole"
+      }
+    ]
   })
 }
 
@@ -59,21 +61,6 @@ resource "aws_iam_role_policy" "lambda_policy" {
   })
 }
 
-# IAM Role Policy for API Gateway to invoke Lambda
-resource "aws_iam_role_policy" "lambda_api_gateway_policy" {
-  role = aws_iam_role.lambda_role.id
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = "lambda:InvokeFunction"
-        Resource = aws_lambda_function.url_shortener_lambda.arn
-      }
-    ]
-  })
-}
-
 # Lambda Function
 resource "aws_lambda_function" "url_shortener_lambda" {
   function_name = "url-shortener-lambda"
@@ -101,14 +88,14 @@ resource "aws_api_gateway_rest_api" "url_shortener_api" {
   description = "API Gateway for URL Shortener"
 }
 
-# API Gateway Resource for Short URL
+# API Gateway Resource
 resource "aws_api_gateway_resource" "url_resource" {
   rest_api_id = aws_api_gateway_rest_api.url_shortener_api.id
   parent_id   = aws_api_gateway_rest_api.url_shortener_api.root_resource_id
   path_part   = "{id}"
 }
 
-# POST Method for URL Shortener Creation
+# POST Method for Short URL Creation
 resource "aws_api_gateway_method" "post_method" {
   rest_api_id   = aws_api_gateway_rest_api.url_shortener_api.id
   resource_id   = aws_api_gateway_rest_api.url_shortener_api.root_resource_id
@@ -116,7 +103,7 @@ resource "aws_api_gateway_method" "post_method" {
   authorization = "NONE"
 }
 
-# GET Method for URL Redirection
+# GET Method for Redirect
 resource "aws_api_gateway_method" "get_method" {
   rest_api_id   = aws_api_gateway_rest_api.url_shortener_api.id
   resource_id   = aws_api_gateway_resource.url_resource.id
@@ -144,13 +131,36 @@ resource "aws_api_gateway_integration" "get_integration" {
   uri                     = aws_lambda_function.url_shortener_lambda.invoke_arn
 }
 
-# API Gateway Deployment
+# Deploy API Gateway
 resource "aws_api_gateway_deployment" "api_deployment" {
   rest_api_id = aws_api_gateway_rest_api.url_shortener_api.id
   depends_on = [
     aws_api_gateway_integration.post_integration,
     aws_api_gateway_integration.get_integration
   ]
+}
+
+# API Gateway Stage with Logging
+resource "aws_api_gateway_stage" "api_stage" {
+  deployment_id              = aws_api_gateway_deployment.api_deployment.id
+  rest_api_id                = aws_api_gateway_rest_api.url_shortener_api.id
+  stage_name                 = "prod"
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api_gateway_log_group.arn
+    format          = "$context.requestId $context.identity.sourceIp $context.httpMethod $context.resourcePath $context.status $context.responseLength $context.requestTime"
+  }
+
+  variables = {
+    lambda_alias = "prod"
+  }
+
+  depends_on = [aws_api_gateway_account.account_settings]
+}
+
+# CloudWatch Log Group for API Gateway
+resource "aws_cloudwatch_log_group" "api_gateway_log_group" {
+  name              = "/aws/apigateway/url-shortener"
+  retention_in_days = 14
 }
 
 # CloudWatch Log Group for Lambda
@@ -177,32 +187,40 @@ resource "aws_sns_topic" "alerts" {
   name = "url-shortener-alerts"
 }
 
-# API Gateway Stage
-resource "aws_api_gateway_stage" "api_stage" {
-  deployment_id = aws_api_gateway_deployment.api_deployment.id
-  rest_api_id   = aws_api_gateway_rest_api.url_shortener_api.id
-  stage_name    = "prod"
-
-  # Enable logging for API Gateway
-  access_log_settings {
-    format = jsonencode({
-      requestId    = "$context.requestId",
-      ip           = "$context.identity.sourceIp",
-      userAgent    = "$context.identity.userAgent",
-      statusCode   = "$context.status"
-    })
-    destination_arn = aws_cloudwatch_log_group.lambda_log_group.arn
-  }
+# IAM Role for API Gateway Logging
+resource "aws_iam_role" "api_gateway_cloudwatch_role" {
+  name = "APIGatewayCloudWatchLogsRole"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = { Service = "apigateway.amazonaws.com" },
+        Action    = "sts:AssumeRole"
+      }
+    ]
+  })
 }
 
-# Autoscaling for Lambda (Concurrency Limits)
-resource "aws_lambda_function_event_invoke_config" "lambda_scaling" {
-  function_name                = aws_lambda_function.url_shortener_lambda.function_name
-  maximum_retry_attempts       = 2
-  maximum_event_age_in_seconds = 60
-  destination_config {
-    on_failure {
-      destination = aws_sns_topic.alerts.arn
-    }
-  }
+resource "aws_iam_role_policy" "api_gateway_cloudwatch_policy" {
+  role = aws_iam_role.api_gateway_cloudwatch_role.id
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
+}
+
+# Associate IAM Role with API Gateway Account
+resource "aws_api_gateway_account" "account_settings" {
+  cloudwatch_role_arn = aws_iam_role.api_gateway_cloudwatch_role.arn
 }
