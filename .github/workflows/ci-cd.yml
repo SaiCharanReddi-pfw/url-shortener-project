@@ -30,12 +30,8 @@ jobs:
         run: bash lambda/build_lambda.sh
 
       - name: Initialize Terraform
-        run: terraform -chdir=terraform init \
-          -backend-config="bucket=terraform-url-shortener-state" \
-          -backend-config="key=url-shortener/terraform.tfstate" \
-          -backend-config="region=eu-west-2" \
-          -backend-config="dynamodb_table=terraform-locks" \
-          -backend-config="encrypt=true"
+        run: terraform -chdir=terraform init -backend-config="bucket=terraform-url-shortener-state" -backend-config="key=url-shortener/terraform.tfstate" -backend-config="region=eu-west-2" -backend-config="dynamodb_table=terraform-locks" -backend-config="encrypt=true"
+
 
       - name: Validate Terraform
         run: terraform -chdir=terraform validate
