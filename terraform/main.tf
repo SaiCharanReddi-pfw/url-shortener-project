@@ -167,7 +167,12 @@ resource "aws_iam_role" "api_gateway_cloudwatch_role" {
       {
         Effect    = "Allow",
         Principal = { Service = "apigateway.amazonaws.com" },
-        Action    = "sts:AssumeRole"
+        Action    = "sts:AssumeRole",
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+        }
       }
     ]
   })
@@ -195,3 +200,5 @@ resource "aws_iam_role_policy" "api_gateway_cloudwatch_policy" {
 resource "aws_api_gateway_account" "account_settings" {
   cloudwatch_role_arn = aws_iam_role.api_gateway_cloudwatch_role.arn
 }
+
+data "aws_caller_identity" "current" {}
