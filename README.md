@@ -4,7 +4,7 @@ This project provides an efficient, scalable, and secure URL Shortener applicati
 ## Project Directory Structure
 
 ```
-url-shortener/
+url-shortener-project/
 ├── .github/
 │   └── workflows/
 │       └── terraform.yml      # GitHub Actions workflow for CI/CD
