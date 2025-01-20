@@ -3,7 +3,7 @@ name: Terraform Workflow
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   terraform:
@@ -76,4 +76,4 @@ jobs:
 
       - name: Apply Terraform
         if: github.ref == 'refs/heads/master'
-        run: terraform -chdir=terraform destroy -auto-approve
+        run: terraform -chdir=terraform destroy -auto-approve tfplan
