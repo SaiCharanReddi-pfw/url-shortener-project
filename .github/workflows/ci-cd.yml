@@ -47,23 +47,19 @@ jobs:
             echo "DynamoDB table $DYNAMODB_TABLE already exists."
           else
             echo "DynamoDB table $DYNAMODB_TABLE does not exist. Creating..."
-            # Retry logic to handle DynamoDB table creation conflicts
-            retries=5
-            count=0
-            while [ $count -lt $retries ]; do
-              aws dynamodb create-table \
-                --table-name $DYNAMODB_TABLE \
-                --attribute-definitions AttributeName=LockID,AttributeType=S \
-                --key-schema AttributeName=LockID,KeyType=HASH \
-                --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
-                --region eu-west-2 && break
-              echo "Retrying DynamoDB table creation... attempt $((count + 1))"
-              sleep 10
-              count=$((count + 1))
-            done
-            if [ $count -eq $retries ]; then
-              echo "Failed to create DynamoDB table after $retries attempts."
-              exit 1
+            
+            # Create DynamoDB table, but skip if ResourceInUseException is encountered
+            create_table_output=$(aws dynamodb create-table \
+              --table-name $DYNAMODB_TABLE \
+              --attribute-definitions AttributeName=LockID,AttributeType=S \
+              --key-schema AttributeName=LockID,KeyType=HASH \
+              --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+              --region eu-west-2 2>&1)
+            
+            if echo "$create_table_output" | grep -q "ResourceInUseException"; then
+              echo "DynamoDB table creation skipped due to ResourceInUseException: Table is being created or updated."
+            else
+              echo "DynamoDB table $DYNAMODB_TABLE created successfully."
             fi
           fi
 
