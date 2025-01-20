@@ -1,13 +1,3 @@
-terraform {
-  backend "s3" {
-    bucket         = "terraform-url-shortener-state"
-    key            = "url-shortener/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "terraform-lock"
-    encrypt        = true
-  }
-}
-
 # DynamoDB Table for URL Shortener
 resource "aws_dynamodb_table" "url_shortener" {
   name         = "url-shortener"
