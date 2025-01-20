@@ -29,6 +29,11 @@ jobs:
       - name: Build Lambda Package
         run: bash lambda/build_lambda.sh
 
+      - name: Initialize Terraform Backend (Provision S3 and DynamoDB)
+        run: |
+          terraform -chdir=terraform init
+          terraform -chdir=terraform apply -auto-approve -target=aws_s3_bucket.terraform_state -target=aws_dynamodb_table.terraform_lock
+
       - name: Initialize Terraform
         run: terraform -chdir=terraform init -backend-config="bucket=terraform-url-shortener-state" -backend-config="key=url-shortener/terraform.tfstate" -backend-config="region=eu-west-2" -backend-config="dynamodb_table=terraform-locks" -backend-config="encrypt=true"
 
