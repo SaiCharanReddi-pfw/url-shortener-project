@@ -10,7 +10,7 @@ resource "aws_dynamodb_table" "url_shortener" {
   }
 
   tags = {
-    Project     = "URL Shortener"
+    Project = "URL Shortener"
   }
 }
 
@@ -59,6 +59,21 @@ resource "aws_iam_role_policy" "lambda_policy" {
   })
 }
 
+# IAM Role Policy for API Gateway to invoke Lambda
+resource "aws_iam_role_policy" "lambda_api_gateway_policy" {
+  role = aws_iam_role.lambda_role.id
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "lambda:InvokeFunction"
+        Resource = aws_lambda_function.url_shortener_lambda.arn
+      }
+    ]
+  })
+}
+
 # Lambda Function
 resource "aws_lambda_function" "url_shortener_lambda" {
   function_name = "url-shortener-lambda"
@@ -76,7 +91,7 @@ resource "aws_lambda_function" "url_shortener_lambda" {
   }
 
   tags = {
-    Project     = "URL Shortener"
+    Project = "URL Shortener"
   }
 }
 
@@ -86,14 +101,14 @@ resource "aws_api_gateway_rest_api" "url_shortener_api" {
   description = "API Gateway for URL Shortener"
 }
 
-# API Gateway Resource
+# API Gateway Resource for Short URL
 resource "aws_api_gateway_resource" "url_resource" {
   rest_api_id = aws_api_gateway_rest_api.url_shortener_api.id
   parent_id   = aws_api_gateway_rest_api.url_shortener_api.root_resource_id
   path_part   = "{id}"
 }
 
-# POST Method for Short URL Creation
+# POST Method for URL Shortener Creation
 resource "aws_api_gateway_method" "post_method" {
   rest_api_id   = aws_api_gateway_rest_api.url_shortener_api.id
   resource_id   = aws_api_gateway_rest_api.url_shortener_api.root_resource_id
@@ -101,7 +116,7 @@ resource "aws_api_gateway_method" "post_method" {
   authorization = "NONE"
 }
 
-# GET Method for Redirect
+# GET Method for URL Redirection
 resource "aws_api_gateway_method" "get_method" {
   rest_api_id   = aws_api_gateway_rest_api.url_shortener_api.id
   resource_id   = aws_api_gateway_resource.url_resource.id
@@ -129,7 +144,7 @@ resource "aws_api_gateway_integration" "get_integration" {
   uri                     = aws_lambda_function.url_shortener_lambda.invoke_arn
 }
 
-# Deploy API Gateway
+# API Gateway Deployment
 resource "aws_api_gateway_deployment" "api_deployment" {
   rest_api_id = aws_api_gateway_rest_api.url_shortener_api.id
   depends_on = [
@@ -167,6 +182,17 @@ resource "aws_api_gateway_stage" "api_stage" {
   deployment_id = aws_api_gateway_deployment.api_deployment.id
   rest_api_id   = aws_api_gateway_rest_api.url_shortener_api.id
   stage_name    = "prod"
+
+  # Enable logging for API Gateway
+  access_log_settings {
+    format = jsonencode({
+      requestId    = "$context.requestId",
+      ip           = "$context.identity.sourceIp",
+      userAgent    = "$context.identity.userAgent",
+      statusCode   = "$context.status"
+    })
+    destination_arn = aws_cloudwatch_log_group.lambda_log_group.arn
+  }
 }
 
 # Autoscaling for Lambda (Concurrency Limits)
