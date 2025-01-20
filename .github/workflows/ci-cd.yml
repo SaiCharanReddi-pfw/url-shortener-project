@@ -30,15 +30,19 @@ jobs:
         run: bash lambda/build_lambda.sh
 
       - name: Initialize Terraform
-        run: terraform init -backend-config="bucket=terraform-url-shortener-state" -backend-config="key=url-shortener/terraform.tfstate" -backend-config="region=eu-west-2" -backend-config="dynamodb_table=terraform-locks" -backend-config="encrypt=true"
+        run: terraform -chdir=url-shortener-project/terraform init \
+          -backend-config="bucket=terraform-url-shortener-state" \
+          -backend-config="key=url-shortener/terraform.tfstate" \
+          -backend-config="region=eu-west-2" \
+          -backend-config="dynamodb_table=terraform-locks" \
+          -backend-config="encrypt=true"
 
       - name: Validate Terraform
-        run: terraform validate
+        run: terraform -chdir=url-shortener-project/terraform validate
 
       - name: Plan Terraform
-        run: terraform plan -out=tfplan
+        run: terraform -chdir=url-shortener-project/terraform plan -out=tfplan
 
       - name: Apply Terraform
-        if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve tfplan
-
+        if: github.ref == 'refs/heads/master'
+        run: terraform -chdir=url-shortener-project/terraform apply -auto-approve tfplan
