@@ -49,6 +49,11 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "dynamodb:GetItem"
         ],
         Resource = aws_dynamodb_table.url_shortener.arn
+      },
+      {
+        Effect = "Allow",
+        Action = "sns:Publish",
+        Resource = aws_sns_topic.alerts.arn
       }
     ]
   })
