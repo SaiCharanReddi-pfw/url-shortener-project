@@ -29,13 +29,34 @@ jobs:
       - name: Build Lambda Package
         run: bash lambda/build_lambda.sh
 
-      - name: Initialize Terraform Backend (Provision S3 and DynamoDB)
+      - name: Create or Ensure S3 Bucket and DynamoDB Table
         run: |
-          terraform -chdir=terraform init
-          terraform -chdir=terraform apply -auto-approve -target=aws_s3_bucket.terraform_state -target=aws_dynamodb_table.terraform_lock
+          BUCKET_NAME="terraform-url-shortener-state"
+          DYNAMODB_TABLE="terraform-locks"
+        
+          # Check if the S3 bucket exists
+          if ! aws s3api head-bucket --bucket $BUCKET_NAME 2>/dev/null; then
+            echo "S3 bucket $BUCKET_NAME does not exist. Creating..."
+            aws s3 mb s3://$BUCKET_NAME --region eu-west-2
+          else
+            echo "S3 bucket $BUCKET_NAME already exists."
+          fi
+
+          # Check if the DynamoDB table exists
+          if ! aws dynamodb describe-table --table-name $DYNAMODB_TABLE 2>/dev/null; then
+            echo "DynamoDB table $DYNAMODB_TABLE does not exist. Creating..."
+            aws dynamodb create-table \
+              --table-name $DYNAMODB_TABLE \
+              --attribute-definitions AttributeName=LockID,AttributeType=S \
+              --key-schema AttributeName=LockID,KeyType=HASH \
+              --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+              --region eu-west-2
+          else
+            echo "DynamoDB table $DYNAMODB_TABLE already exists."
+          fi
 
       - name: Initialize Terraform
-        run: terraform -chdir=terraform init -backend-config="bucket=terraform-url-shortener-state" -backend-config="key=url-shortener/terraform.tfstate" -backend-config="region=eu-west-2" -backend-config="dynamodb_table=terraform-lock" -backend-config="encrypt=true"
+        run: terraform -chdir=terraform init -backend-config="bucket=terraform-url-shortener-state" -backend-config="key=url-shortener/terraform.tfstate" -backend-config="region=eu-west-2" -backend-config="dynamodb_table=terraform-locks" -backend-config="encrypt=true"
 
 
       - name: Validate Terraform
