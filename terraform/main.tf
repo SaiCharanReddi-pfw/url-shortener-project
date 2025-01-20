@@ -10,7 +10,6 @@ resource "aws_dynamodb_table" "url_shortener" {
   }
 
   tags = {
-    Environment = var.environment
     Project     = "URL Shortener"
   }
 }
@@ -72,7 +71,6 @@ resource "aws_lambda_function" "url_shortener_lambda" {
   }
 
   tags = {
-    Environment = var.environment
     Project     = "URL Shortener"
   }
 }
@@ -83,7 +81,7 @@ resource "aws_api_gateway_rest_api" "url_shortener_api" {
   description = "API Gateway for URL Shortener"
 }
 
-# API Gateway Resource (/{id})
+# API Gateway Resource
 resource "aws_api_gateway_resource" "url_resource" {
   rest_api_id = aws_api_gateway_rest_api.url_shortener_api.id
   parent_id   = aws_api_gateway_rest_api.url_shortener_api.root_resource_id
