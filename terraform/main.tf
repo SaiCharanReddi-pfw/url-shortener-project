@@ -24,7 +24,6 @@ resource "aws_iam_role" "lambda_role" {
 			"Effect": "Allow",
 			"Principal": {
 				"Service": [
-					"apigateway.amazonaws.com",
 					"lambda.amazonaws.com"
 				]
 			},
@@ -150,8 +149,7 @@ resource "aws_iam_role" "api_gateway_logging_role" {
 			"Effect": "Allow",
 			"Principal": {
 				"Service": [
-					"apigateway.amazonaws.com",
-					"lambda.amazonaws.com"
+					"apigateway.amazonaws.com"
 				]
 			},
 			"Action": "sts:AssumeRole"
