@@ -84,13 +84,22 @@ resource "aws_lambda_function" "url_shortener_lambda" {
   }
 }
 
-# Permission to Lambda to Allow API Gateway to Invoke
-resource "aws_lambda_permission" "apigateway_invoke" {
+# Permission to Lambda to Allow API Gateway to Invoke POST Method
+resource "aws_lambda_permission" "apigateway_invoke_post" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.url_shortener_lambda.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:eu-west-2:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.url_shortener_api.id}/*/*/"
+}
+
+# Permission to Lambda to Allow API Gateway to Invoke GET Method
+resource "aws_lambda_permission" "apigateway_invoke_get" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.url_shortener_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:eu-west-2:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.url_shortener_api.id}/*/GET/{id}"
 }
 
 # API Gateway
