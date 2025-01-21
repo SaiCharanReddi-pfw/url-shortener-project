@@ -161,22 +161,9 @@ resource "aws_iam_role" "api_gateway_logging_role" {
 }
 
 # IAM Policy for API Gateway Logging Role
-resource "aws_iam_role_policy" "api_gateway_logging_policy" {
-  role = aws_iam_role.api_gateway_logging_role.id
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ],
-        Resource = "*"
-      }
-    ]
-  })
+resource "aws_iam_role_policy_attachment" "api_gateway_logging_policy" {
+  role       = aws_iam_role.api_gateway_logging_role.id
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
 }
 
 # Associate IAM Role with API Gateway Account
