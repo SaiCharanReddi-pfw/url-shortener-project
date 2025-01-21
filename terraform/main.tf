@@ -86,7 +86,7 @@ resource "aws_lambda_function" "url_shortener_lambda" {
 
 # Permission to Lambda to Allow API Gateway to Invoke POST Method
 resource "aws_lambda_permission" "apigateway_invoke_post" {
-  statement_id  = "AllowExecutionFromAPIGateway"
+  statement_id  = "AllowExecutionFromAPIGatewayForPost"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.url_shortener_lambda.function_name
   principal     = "apigateway.amazonaws.com"
@@ -95,7 +95,7 @@ resource "aws_lambda_permission" "apigateway_invoke_post" {
 
 # Permission to Lambda to Allow API Gateway to Invoke GET Method
 resource "aws_lambda_permission" "apigateway_invoke_get" {
-  statement_id  = "AllowExecutionFromAPIGateway"
+  statement_id  = "AllowExecutionFromAPIGatewayForGet"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.url_shortener_lambda.function_name
   principal     = "apigateway.amazonaws.com"
