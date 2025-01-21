@@ -90,7 +90,7 @@ resource "aws_lambda_permission" "apigateway_invoke" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.url_shortener_lambda.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:eu-west-2:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.url_shortener_api.id}/*/POST/"
+  source_arn    = "arn:aws:execute-api:eu-west-2:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.url_shortener_api.id}/*/*/"
 }
 
 # API Gateway
