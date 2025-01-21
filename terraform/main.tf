@@ -1,5 +1,3 @@
-data "aws_caller_identity" "current" {}
-
 # DynamoDB Table for URL Shortener
 resource "aws_dynamodb_table" "url_shortener" {
   name         = "url-shortener"
@@ -137,6 +135,45 @@ resource "aws_api_gateway_deployment" "api_deployment" {
   ]
 }
 
+# IAM Role for API Gateway Logging
+resource "aws_iam_role" "api_gateway_logging_role" {
+  name = "APIGatewayCloudWatchLogsRole"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect    = "Allow",
+        Principal = { Service = "apigateway.amazonaws.com" },
+        Action    = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+# IAM Policy for API Gateway Logging Role
+resource "aws_iam_role_policy" "api_gateway_logging_policy" {
+  role = aws_iam_role.api_gateway_logging_role.id
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Associate IAM Role with API Gateway Account
+resource "aws_api_gateway_account" "account_settings" {
+  cloudwatch_role_arn = aws_iam_role.api_gateway_logging_role.arn
+}
+
 # API Gateway Stage with Logging
 resource "aws_api_gateway_stage" "api_stage" {
   deployment_id              = aws_api_gateway_deployment.api_deployment.id
@@ -146,6 +183,8 @@ resource "aws_api_gateway_stage" "api_stage" {
     destination_arn = aws_cloudwatch_log_group.api_gateway_log_group.arn
     format          = "$context.requestId $context.identity.sourceIp $context.httpMethod $context.resourcePath $context.status $context.responseLength $context.requestTime"
   }
+
+  depends_on = [aws_api_gateway_account.account_settings]
 }
 
 # CloudWatch Log Group for API Gateway
