@@ -1,6 +1,7 @@
 # Data Resource for Caller Identity
 data "aws_caller_identity" "current" {}
 
+
 # DynamoDB Table for URL Shortener
 resource "aws_dynamodb_table" "url_shortener" {
   name         = "url-shortener"
