@@ -143,7 +143,7 @@ resource "aws_iam_role" "api_gateway_logging_role" {
     Statement = [
       {
         Effect    = "Allow",
-        Principal = { Service = "apigateway.amazonaws.com" },
+        Principal = { Service = "apigateway.amazonaws.com", "lambda.amazonaws.com" },
         Action    = "sts:AssumeRole"
       }
     ]
