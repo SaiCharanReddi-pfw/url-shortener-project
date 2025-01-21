@@ -144,15 +144,20 @@ resource "aws_api_gateway_deployment" "api_deployment" {
 resource "aws_iam_role" "api_gateway_logging_role" {
   name = "APIGatewayCloudWatchLogsRole"
   assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect    = "Allow",
-        Principal = { Service = "apigateway.amazonaws.com", "lambda.amazonaws.com" },
-        Action    = "sts:AssumeRole"
-      }
-    ]
-  })
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Principal": {
+				"Service": [
+					"apigateway.amazonaws.com",
+					"lambda.amazonaws.com"
+				]
+			},
+			"Action": "sts:AssumeRole"
+		}
+	]
+})
 }
 
 # IAM Policy for API Gateway Logging Role
