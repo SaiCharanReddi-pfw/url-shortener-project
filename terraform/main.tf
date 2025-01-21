@@ -146,54 +146,10 @@ resource "aws_api_gateway_stage" "api_stage" {
     destination_arn = aws_cloudwatch_log_group.api_gateway_log_group.arn
     format          = "$context.requestId $context.identity.sourceIp $context.httpMethod $context.resourcePath $context.status $context.responseLength $context.requestTime"
   }
-
-  variables = {
-    lambda_alias = "prod"
-  }
-
-  depends_on = [aws_api_gateway_account.account_settings]
 }
 
 # CloudWatch Log Group for API Gateway
 resource "aws_cloudwatch_log_group" "api_gateway_log_group" {
   name              = "/aws/apigateway/url-shortener"
   retention_in_days = 14
-}
-
-# IAM Role for API Gateway Logging
-resource "aws_iam_role" "api_gateway_cloudwatch_role" {
-  name = "APIGatewayCloudWatchLogsRole"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect    = "Allow",
-        Principal = { Service = "apigateway.amazonaws.com" },
-        Action    = "sts:AssumeRole"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "api_gateway_cloudwatch_policy" {
-  role = aws_iam_role.api_gateway_cloudwatch_role.id
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ],
-        Resource = "arn:aws:logs:*:*:*"
-      }
-    ]
-  })
-}
-
-# Associate IAM Role with API Gateway Account
-resource "aws_api_gateway_account" "account_settings" {
-  cloudwatch_role_arn = aws_iam_role.api_gateway_cloudwatch_role.arn
 }
